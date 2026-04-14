@@ -30,6 +30,7 @@ dependencies = [
   "soundfile>=0.13.1",
   "markdown>=3.10.2",
   "bs4>=0.0.2",
+  "datasets>=4.8.4",
 ]
 
 [project.optional-dependencies]

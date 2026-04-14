@@ -1,0 +1,69 @@
+[project]
+name = "oh-my-HFTrainer"
+version = "0.1.0"
+authors = [
+    { name = "akawincent", email = "liwenpu0520@gmail.com" },
+]
+description = "demo use of huggingface trainer"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  # Core runtime deps used across examples and utilities
+  "accelerate",
+  "av",
+  "packaging",
+  "pillow",
+  "requests",
+  "torch>=2.1.0",
+  "torchvision",
+  "transformers==5.5.4",
+  "torchvision>=0.16.0",
+  "qwen-vl-utils>=0.0.14",
+  "flash-attn>=2.8.3",
+  "ipykernel>=7.2.0",
+  "openai>=2.18.0",
+  "oss2>=2.19.1",
+  "opencv-python>=4.13.0.92",
+  "matplotlib>=3.10.8",
+  "decord>=0.6.0",
+  "qwen-agent[gui]>=0.0.33",
+  "soundfile>=0.13.1",
+  "markdown>=3.10.2",
+  "bs4>=0.0.2",
+]
+
+[project.optional-dependencies]
+# Minimal set for running scripts under `qwen-vl-finetune/` (training deps are GPU/CUDA-specific).
+finetune = [
+  "deepspeed",
+  "numpy",
+  "peft",
+  "torchcodec>=0.2",
+  "tqdm",
+  "binpacking",
+]
+
+# Lightweight tooling for contributors.
+dev = [
+  "ruff",
+]
+
+[tool.uv]
+no-build-isolation-package = ["flash-attn"]
+
+[[tool.uv.index]]
+name = "pytorch-cu118"
+url = "https://download.pytorch.org/whl/cu118"
+explicit = true
+
+[tool.uv.sources]
+torchvision = [
+    { index = "pytorch-cu118", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torch = [
+    { index = "pytorch-cu118", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+
+
+[tool.ruff]
+line-length = 119

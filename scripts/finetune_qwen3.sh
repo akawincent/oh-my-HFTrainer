@@ -1,22 +1,22 @@
 # Model configuration
 llm=Qwen/Qwen3-0.6B  # Using HuggingFace model ID
-attn_implementation=flash_attention_2
+attn_implementation=sdpa
 
 # Training hyperparameters
 optim=adamw_torch
-lr=2e-5
-batch_size=16
+lr=2e-4
+batch_size=64
 grad_accum_steps=1
 epochs=3
 grad_ckpt_flag=False
 
 # Logging strategy
 eval_strategy=epoch
-save_strategy=epoch
+save_strategy=best
 logging_steps=50
 
 # Dataloader config
-num_workers=8 
+num_workers=8
 pin_memory_flag=True 
 
 # Training entry point
@@ -26,7 +26,7 @@ entry_file=src/finetune_qwen3.py
 datasets=karthiksagarn/astro_horoscope
 
 # Output configuration
-output_dir=./outputs/Qwen3-0.6B-finetuned-astro_horoscope_use_FA2
+output_dir=./outputs/Qwen3-0.6B-finetuned-astro_horoscope_use_sdpa
 
 # Training arguments
 args="
@@ -49,4 +49,4 @@ args="
     --dataloader_pin_memory ${pin_memory_flag} \
 "
 
-CUDA_VISIBLE_DEVICES=1 python ${entry_file} ${args}
+CUDA_VISIBLE_DEVICES=7 python ${entry_file} ${args}

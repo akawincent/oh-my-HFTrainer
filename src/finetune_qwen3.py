@@ -56,4 +56,4 @@ if __name__ == "__main__":
     trainer.train()
 
     # upload model to huggingface hub
-    trainer.push_to_hub()
+    # trainer.push_to_hub()

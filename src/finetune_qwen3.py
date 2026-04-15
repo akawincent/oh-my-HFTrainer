@@ -5,7 +5,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import DataCollatorForLanguageModeling, Trainer
 
 from arguments import ModelArguments, DataArguments, TrainingArguments
-
+from callbacks import EpochLoggerCallback, TrainLoggerCallback
 
 def load_qwen3_model(args):
     model = AutoModelForCausalLM.from_pretrained(
@@ -52,6 +52,10 @@ if __name__ == "__main__":
         eval_dataset=dataset["test"],
         processing_class=tokenizer,
         data_collator=DataCollatorForLanguageModeling(tokenizer, mlm=False),
+        callbacks=[
+            EpochLoggerCallback(),
+            TrainLoggerCallback()
+        ]
     )
     trainer.train()
 

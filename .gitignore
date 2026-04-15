@@ -54,3 +54,11 @@ checkpoints/
 runs/
 wandb/
 tensorboard/
+
+# OS files
+.DS_Store
+._*
+
+# Agent 
+AGENTS.md
+CLAUDE.md

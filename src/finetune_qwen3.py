@@ -1,3 +1,5 @@
+import math
+
 from datasets import load_dataset
 
 import transformers
@@ -6,6 +8,19 @@ from transformers import DataCollatorForLanguageModeling, Trainer
 
 from arguments import ModelArguments, DataArguments, TrainingArguments
 from callbacks import EpochLoggerCallback, TrainLoggerCallback
+
+
+class CausalLMTrainer(Trainer):
+    def evaluation_loop(self, *args, metric_key_prefix="eval", **kwargs):
+        output = super().evaluation_loop(*args, metric_key_prefix=metric_key_prefix, **kwargs)
+        loss_key = f"{metric_key_prefix}_loss"
+        if loss_key in output.metrics:
+            try:
+                output.metrics[f"{metric_key_prefix}_perplexity"] = math.exp(output.metrics[loss_key])
+            except OverflowError:
+                output.metrics[f"{metric_key_prefix}_perplexity"] = float("inf")
+        return output
+
 
 def load_qwen3_model(args):
     model = AutoModelForCausalLM.from_pretrained(
@@ -45,7 +60,7 @@ if __name__ == "__main__":
     dataset = process_dataset(tokenizer, data_args, model_args.model_max_length)
 
     # call Trainer
-    trainer = Trainer(
+    trainer = CausalLMTrainer(
         model=model,
         args=training_args,
         train_dataset=dataset["train"],
@@ -59,5 +74,8 @@ if __name__ == "__main__":
     )
     trainer.train()
 
+    # save model to disk
+    trainer.save_model()
+    
     # upload model to huggingface hub
     # trainer.push_to_hub()

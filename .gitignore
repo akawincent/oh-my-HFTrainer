@@ -62,3 +62,6 @@ tensorboard/
 # Agent 
 AGENTS.md
 CLAUDE.md
+
+# experiments scripts
+scripts/

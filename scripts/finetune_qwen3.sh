@@ -1,6 +1,7 @@
 # Model configuration
 llm=Qwen/Qwen3-0.6B  # Using HuggingFace model ID
 attn_implementation=sdpa
+max_token_length=512
 
 # Training hyperparameters
 optim=adamw_torch
@@ -14,6 +15,9 @@ grad_ckpt_flag=False
 eval_strategy=epoch
 save_strategy=best
 logging_steps=50
+load_best_model_flag=True
+metric=perplexity
+greater_is_better_flag=False
 
 # Dataloader config
 num_workers=8
@@ -26,12 +30,12 @@ entry_file=src/finetune_qwen3.py
 datasets=karthiksagarn/astro_horoscope
 
 # Output configuration
-output_dir=./outputs/Qwen3-0.6B-finetuned-astro_horoscope_use_sdpa
+output_dir=./outputs/Qwen3-0.6B-finetuned-horoscope-evalv2
 
 # Training arguments
 args="
     --model_name_or_path "${llm}" \
-    --model_max_length 512 \
+    --model_max_length ${max_token_length} \
     --attn_implementation "${attn_implementation}" \
     --dataset_name ${datasets} \
     --output_dir ${output_dir} \
@@ -42,11 +46,14 @@ args="
     --gradient_checkpointing ${grad_ckpt_flag} \
     --optim "${optim}" \
     --learning_rate ${lr} \
+    --metric_for_best_model "${metric}" \
+    --greater_is_better ${greater_is_better_flag} \
     --eval_strategy ${eval_strategy} \
     --save_strategy ${save_strategy} \
     --logging_steps ${logging_steps} \
+    --load_best_model_at_end ${load_best_model_flag} \
     --dataloader_num_workers ${num_workers} \
     --dataloader_pin_memory ${pin_memory_flag} \
 "
 
-CUDA_VISIBLE_DEVICES=7 python ${entry_file} ${args}
+CUDA_VISIBLE_DEVICES=7 ./.venv/bin/python ${entry_file} ${args}

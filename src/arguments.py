@@ -1,6 +1,6 @@
 import transformers
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Sequence, List
+from typing import Optional
 
 
 @dataclass
@@ -42,3 +42,5 @@ class TrainingArguments(transformers.TrainingArguments):
     eval_strategy: str = field(default="epoch")
     save_strategy: str = field(default="epoch")
     load_best_model_at_end: bool = field(default=True)
+    metric_for_best_model: Optional[str] = field(default="loss")
+    greater_is_better: bool = field(default=True)

@@ -43,6 +43,7 @@ finetune = [
   "torchcodec>=0.2",
   "tqdm",
   "binpacking",
+  "wandb>=0.19.0",
 ]
 
 # Lightweight tooling for contributors.

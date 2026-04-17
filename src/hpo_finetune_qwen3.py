@@ -1,6 +1,5 @@
 import json
 import math
-import os
 from pathlib import Path
 
 from datasets import load_dataset
@@ -9,8 +8,15 @@ import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import DataCollatorForLanguageModeling, Trainer
 
-from arguments import DataArguments, HPOArguments, ModelArguments, TrainingArguments, WandbArguments
+from arguments import (
+    DataArguments,
+    HPOArguments,
+    ModelArguments,
+    TrainingArguments,
+    WandbArguments
+)
 from callbacks import EpochLoggerCallback, TrainLoggerCallback
+from wandb_utils import configure_wandb_environment
 
 
 class CausalLMTrainer(Trainer):
@@ -51,14 +57,42 @@ def process_dataset(tokenizer, args, max_seq_len):
 
     return dataset
 
-def build_model_init(model_args):
+
+def save_best_hyperparameters(output_dir, best_run):
+    output_path = Path(output_dir or "./outputs") / "best_hyperparameters.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    payload = {
+        "run_id": best_run.run_id,
+        "objective": best_run.objective,
+        "hyperparameters": best_run.hyperparameters,
+    }
+    with output_path.open("w", encoding="utf-8") as file:
+        json.dump(payload, file, indent=2, sort_keys=True)
+
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    print(f"Saved best hyperparameters to {output_path}")
+
+
+if __name__ == "__main__":
+    parser = transformers.HfArgumentParser(
+        (
+            ModelArguments, 
+            DataArguments, 
+            TrainingArguments, 
+            HPOArguments, 
+            WandbArguments
+        )
+    )
+    model_args, data_args, training_args, hpo_args, wandb_args = parser.parse_args_into_dataclasses()
+
+    configure_wandb_environment(training_args, wandb_args)
+    tokenizer = load_qwen3_tokenizer(model_args)
+    dataset = process_dataset(tokenizer, data_args, model_args.model_max_length)
+
     def model_init(trial=None):
         return load_qwen3_model(model_args)
 
-    return model_init
-
-
-def build_optuna_hp_space(hpo_args):
     def optuna_hp_space(trial):
         return {
             "learning_rate": trial.suggest_float(
@@ -87,48 +121,14 @@ def build_optuna_hp_space(hpo_args):
             ),
         }
 
-    return optuna_hp_space
-
-
-def build_compute_objective(metric_name):
     def compute_objective(metrics):
-        return metrics[metric_name]
-
-    return compute_objective
-
-
-def report_to_wandb(report_to):
-    if isinstance(report_to, str):
-        return report_to in {"all", "wandb"}
-
-    return report_to is not None and ("all" in report_to or "wandb" in report_to)
-
-
-def configure_wandb_environment(training_args, wandb_args):
-    if not report_to_wandb(training_args.report_to):
-        return
-
-    if wandb_args.wandb_project:
-        os.environ["WANDB_PROJECT"] = wandb_args.wandb_project
-    if wandb_args.wandb_mode:
-        os.environ["WANDB_MODE"] = wandb_args.wandb_mode
-    if wandb_args.wandb_watch:
-        os.environ["WANDB_WATCH"] = wandb_args.wandb_watch
-    if wandb_args.wandb_log_model:
-        os.environ["WANDB_LOG_MODEL"] = wandb_args.wandb_log_model
-
-
-def build_trial_name(base_run_name):
-    trial_prefix = base_run_name or "optuna-hpo"
+        return metrics[hpo_args.hpo_metric]
 
     def trial_name(trial):
+        trial_prefix = training_args.run_name or "optuna-hpo"
         return f"{trial_prefix}-trial-{trial.number:03d}"
 
-    return trial_name
-
-
-def build_trainer(*, training_args, dataset, tokenizer, model_init):
-    return CausalLMTrainer(
+    trainer = CausalLMTrainer(
         model=None,
         model_init=model_init,
         args=training_args,
@@ -141,45 +141,12 @@ def build_trainer(*, training_args, dataset, tokenizer, model_init):
             TrainLoggerCallback(),
         ],
     )
-
-
-def save_best_hyperparameters(output_dir, best_run):
-    output_path = Path(output_dir or "./outputs") / "best_hyperparameters.json"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-
-    payload = {
-        "run_id": best_run.run_id,
-        "objective": best_run.objective,
-        "hyperparameters": best_run.hyperparameters,
-    }
-    with output_path.open("w", encoding="utf-8") as file:
-        json.dump(payload, file, indent=2, sort_keys=True)
-
-    print(json.dumps(payload, indent=2, sort_keys=True))
-    print(f"Saved best hyperparameters to {output_path}")
-
-
-if __name__ == "__main__":
-    parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments, HPOArguments, WandbArguments)
-    )
-    model_args, data_args, training_args, hpo_args, wandb_args = parser.parse_args_into_dataclasses()
-
-    configure_wandb_environment(training_args, wandb_args)
-    tokenizer = load_qwen3_tokenizer(model_args)
-    dataset = process_dataset(tokenizer, data_args, model_args.model_max_length)
-    trainer = build_trainer(
-        training_args=training_args,
-        dataset=dataset,
-        tokenizer=tokenizer,
-        model_init=build_model_init(model_args),
-    )
     best_run = trainer.hyperparameter_search(
         backend="optuna",
         direction=hpo_args.hpo_direction,
-        hp_space=build_optuna_hp_space(hpo_args),
+        hp_space=optuna_hp_space,
         n_trials=hpo_args.hpo_n_trials,
-        compute_objective=build_compute_objective(hpo_args.hpo_metric),
-        hp_name=build_trial_name(training_args.run_name),
+        compute_objective=compute_objective,
+        hp_name=trial_name,
     )
     save_best_hyperparameters(training_args.output_dir, best_run)

@@ -31,6 +31,7 @@ dependencies = [
   "markdown>=3.10.2",
   "bs4>=0.0.2",
   "datasets>=4.8.4",
+  "optuna>=4.8.0",
 ]
 
 [project.optional-dependencies]

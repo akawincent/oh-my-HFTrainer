@@ -38,6 +38,24 @@ class TrainingArguments(transformers.TrainingArguments):
     gradient_accumulation_steps: int = field(default=2)
     gradient_checkpointing: bool = field(default=False)
 
+    report_to: None | str | list[str] = field(
+        default="none",
+        metadata={
+            "help": (
+                "The list of integrations to report the results and logs to. "
+                "Use 'all' for all installed integrations, 'none' for no integrations."
+            )
+        },
+    )
+    run_name: str | None = field(
+        default=None,
+        metadata={
+            "help": (
+                "An optional descriptor for the run. Notably used for trackio, wandb, "
+                "mlflow comet and swanlab logging."
+            )
+        },
+    )
     logging_steps: int = field(default=100)
     eval_strategy: str = field(default="epoch")
     save_strategy: str = field(default="epoch")
@@ -59,3 +77,11 @@ class HPOArguments:
     hpo_weight_decay_max: float = field(default=0.1)
     hpo_warmup_ratio_min: float = field(default=0.0)
     hpo_warmup_ratio_max: float = field(default=0.1)
+
+
+@dataclass
+class WandbArguments:
+    wandb_project: Optional[str] = field(default="oh-my-hftrainer")
+    wandb_mode: Optional[str] = field(default=None)
+    wandb_watch: Optional[str] = field(default="false")
+    wandb_log_model: Optional[str] = field(default="false")

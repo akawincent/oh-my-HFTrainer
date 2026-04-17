@@ -1,5 +1,6 @@
 import json
 import math
+import os
 from pathlib import Path
 
 from datasets import load_dataset
@@ -8,7 +9,7 @@ import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import DataCollatorForLanguageModeling, Trainer
 
-from arguments import DataArguments, HPOArguments, ModelArguments, TrainingArguments
+from arguments import DataArguments, HPOArguments, ModelArguments, TrainingArguments, WandbArguments
 from callbacks import EpochLoggerCallback, TrainLoggerCallback
 
 
@@ -96,6 +97,36 @@ def build_compute_objective(metric_name):
     return compute_objective
 
 
+def report_to_wandb(report_to):
+    if isinstance(report_to, str):
+        return report_to in {"all", "wandb"}
+
+    return report_to is not None and ("all" in report_to or "wandb" in report_to)
+
+
+def configure_wandb_environment(training_args, wandb_args):
+    if not report_to_wandb(training_args.report_to):
+        return
+
+    if wandb_args.wandb_project:
+        os.environ["WANDB_PROJECT"] = wandb_args.wandb_project
+    if wandb_args.wandb_mode:
+        os.environ["WANDB_MODE"] = wandb_args.wandb_mode
+    if wandb_args.wandb_watch:
+        os.environ["WANDB_WATCH"] = wandb_args.wandb_watch
+    if wandb_args.wandb_log_model:
+        os.environ["WANDB_LOG_MODEL"] = wandb_args.wandb_log_model
+
+
+def build_trial_name(base_run_name):
+    trial_prefix = base_run_name or "optuna-hpo"
+
+    def trial_name(trial):
+        return f"{trial_prefix}-trial-{trial.number:03d}"
+
+    return trial_name
+
+
 def build_trainer(*, training_args, dataset, tokenizer, model_init):
     return CausalLMTrainer(
         model=None,
@@ -130,10 +161,11 @@ def save_best_hyperparameters(output_dir, best_run):
 
 if __name__ == "__main__":
     parser = transformers.HfArgumentParser(
-        (ModelArguments, DataArguments, TrainingArguments, HPOArguments)
+        (ModelArguments, DataArguments, TrainingArguments, HPOArguments, WandbArguments)
     )
-    model_args, data_args, training_args, hpo_args = parser.parse_args_into_dataclasses()
+    model_args, data_args, training_args, hpo_args, wandb_args = parser.parse_args_into_dataclasses()
 
+    configure_wandb_environment(training_args, wandb_args)
     tokenizer = load_qwen3_tokenizer(model_args)
     dataset = process_dataset(tokenizer, data_args, model_args.model_max_length)
     trainer = build_trainer(
@@ -148,5 +180,6 @@ if __name__ == "__main__":
         hp_space=build_optuna_hp_space(hpo_args),
         n_trials=hpo_args.hpo_n_trials,
         compute_objective=build_compute_objective(hpo_args.hpo_metric),
+        hp_name=build_trial_name(training_args.run_name),
     )
     save_best_hyperparameters(training_args.output_dir, best_run)

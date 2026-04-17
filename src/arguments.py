@@ -32,6 +32,8 @@ class TrainingArguments(transformers.TrainingArguments):
     optim: str = field(default="adamw_torch")
     bf16: bool = field(default=True)
     learning_rate: float = field(default=1e-5)
+    weight_decay: float = field(default=0.0)
+    warmup_ratio: float = field(default=0.0)
 
     num_train_epochs: int = field(default=1)
     per_device_train_batch_size: int = field(default=8)

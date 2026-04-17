@@ -1,8 +1,8 @@
 import math
+import transformers
 
 from datasets import load_dataset
 
-import transformers
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import DataCollatorForLanguageModeling, Trainer
 
@@ -52,6 +52,7 @@ def process_dataset(tokenizer, args, max_seq_len):
     
     return dataset
 
+
 if __name__ == "__main__":
     parser = transformers.HfArgumentParser(
         (
@@ -87,7 +88,9 @@ if __name__ == "__main__":
     trainer.train()
 
     # save model to disk
-    trainer.save_model()
-    
+    if trainer.is_fsdp_enabled:
+        trainer.accelerator.state.fsdp_plugin.set_state_dict_type("FULL_STATE_DICT")
+        trainer.save_model(training_args.output_dir)
+
     # upload model to huggingface hub
-    trainer.push_to_hub()
+    # trainer.push_to_hub()

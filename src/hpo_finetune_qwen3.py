@@ -149,4 +149,5 @@ if __name__ == "__main__":
         compute_objective=compute_objective,
         hp_name=trial_name,
     )
-    save_best_hyperparameters(training_args.output_dir, best_run)
+    if training_args.process_index == 0 and best_run is not None:
+        save_best_hyperparameters(training_args.output_dir, best_run)

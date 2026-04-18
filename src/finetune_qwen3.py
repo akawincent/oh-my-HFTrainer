@@ -90,7 +90,7 @@ if __name__ == "__main__":
     # save model to disk
     if trainer.is_fsdp_enabled:
         trainer.accelerator.state.fsdp_plugin.set_state_dict_type("FULL_STATE_DICT")
-        trainer.save_model(training_args.output_dir)
+    trainer.save_model(training_args.output_dir)
 
     # upload model to huggingface hub
     # trainer.push_to_hub()

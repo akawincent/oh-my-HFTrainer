@@ -125,7 +125,7 @@ def main() -> int:
     local_dir = resolve_local_dir(args.local_dir)
     token = args.token or os.getenv("HF_TOKEN")
     endpoint = args.endpoint or os.getenv("HF_ENDPOINT")
-    api = HfApi(endpoint=endpoint) if endpoint else HfApi()
+    api = HfApi(endpoint=endpoint, token=token)
 
     try:
         whoami_result = api.whoami(token=token, cache=True)
@@ -161,7 +161,7 @@ def main() -> int:
                 folder_path=str(local_dir),
                 repo_type=args.repo_type,
                 revision=args.revision,
-                token=token,
+                private=visibility,
             )
         else:
             upload_kwargs: dict[str, Any] = {

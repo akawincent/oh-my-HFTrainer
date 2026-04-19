@@ -63,8 +63,5 @@ tensorboard/
 AGENTS.md
 CLAUDE.md
 
-# experiments scripts
-scripts/
-
 # Dependency lock files
 uv.lock

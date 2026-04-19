@@ -6,12 +6,7 @@ from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers import DataCollatorForLanguageModeling, Trainer
 
-from arguments import (
-    DataArguments,
-    ModelArguments,
-    TrainingArguments,
-    WandbArguments,
-)
+from arguments import DataArguments, ModelArguments, TrainingArguments, WandbArguments
 from callbacks import EpochLoggerCallback, TrainLoggerCallback
 from wandb_utils import configure_wandb_environment
 
@@ -66,13 +61,9 @@ if __name__ == "__main__":
 
     configure_wandb_environment(training_args, wandb_args)
 
-    # load model
     model, tokenizer = load_qwen3_model(model_args)
-
-    # process dataset
     dataset = process_dataset(tokenizer, data_args, model_args.model_max_length)
 
-    # call Trainer
     trainer = CausalLMTrainer(
         model=model,
         args=training_args,
@@ -90,11 +81,3 @@ if __name__ == "__main__":
     final_metrics = trainer.evaluate(metric_key_prefix="eval")
     trainer.log_metrics("eval", final_metrics)
     trainer.save_metrics("eval", final_metrics)
-
-    # save model to disk
-    if trainer.is_fsdp_enabled:
-        trainer.accelerator.state.fsdp_plugin.set_state_dict_type("FULL_STATE_DICT")
-    trainer.save_model(training_args.output_dir)
-
-    # upload model to huggingface hub
-    # trainer.push_to_hub()

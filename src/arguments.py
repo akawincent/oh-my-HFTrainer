@@ -71,6 +71,8 @@ class HPOArguments:
     hpo_n_trials: int = field(default=12)
     hpo_direction: str = field(default="minimize")
     hpo_metric: str = field(default="eval_perplexity")
+    hpo_accelerate_config: str = field(default="configs/accelerate/ddp_config.yaml")
+    hpo_train_entry_file: str = field(default="src/hpo_trial_qwen3.py")
     hpo_learning_rate_min: float = field(default=5e-6)
     hpo_learning_rate_max: float = field(default=5e-4)
     hpo_batch_size_choices: list[int] = field(default_factory=lambda: [16, 32, 64])
